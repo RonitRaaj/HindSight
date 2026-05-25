@@ -4,18 +4,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
 WORKDIR /app
 
-# 🚀 FIXED: Changed '//' to '#' for Docker comment compatibility
-# Copy the solution and project files first to leverage Docker layer caching
-COPY *.sln ./
-COPY src/Hindsight.Core/*.csproj ./src/Hindsight.Core/
-COPY src/Hindsight.Application/*.csproj ./src/Hindsight.Application/
-COPY src/Hindsight.Infrastructure/*.csproj ./src/Hindsight.Infrastructure/
-COPY src/Hindsight.WebAPI/*.csproj ./src/Hindsight.WebAPI/
+# 🚀 FIX: Copy everything directly to completely avoid folder casing mismatch errors
+COPY . ./
 RUN dotnet restore
 
-# 🚀 FIXED: Changed '//' to '#' for Docker comment compatibility
-# Copy the remaining source directories and publish the final binaries
-COPY src/ ./src/
+# Publish the final production release binaries
 RUN dotnet publish src/Hindsight.WebAPI/Hindsight.WebAPI.csproj -c Release -o out
 
 # ==========================================
