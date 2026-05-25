@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . ./
 
 # 🚀 FIXED: Point directly to your modern .slnx file for the restore process
-RUN dotnet restore HindSight.slnx
+RUN dotnet restore Hindsight.slnx
 
 # Publish the final release binaries using the explicit WebAPI project path
 RUN dotnet publish src/Hindsight.WebAPI/Hindsight.WebAPI.csproj -c Release -o out
