@@ -1,0 +1,6 @@
+@Hindsight.WebAPI_HostAddress = http://localhost:5285
+
+GET {{Hindsight.WebAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
