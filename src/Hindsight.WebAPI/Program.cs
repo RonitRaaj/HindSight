@@ -21,7 +21,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontendApp", policy =>
     {
-        policy.WithOrigins("https://time-fortune.ronitrj1234.workers.dev/") // Allows your local React build
+        policy.WithOrigins("https://time-fortune.ronitrj1234.workers.dev") // Allows your local React build
               .AllowAnyHeader()                     // Allows content-type, accept, etc.
               .AllowAnyMethod();                    // Allows GET, POST, etc.
     });
