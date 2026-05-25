@@ -4,13 +4,12 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
 WORKDIR /app
 
-# Copy all repository source files into the container workspace
+# Copy absolutely everything from your repository into the container workspace
 COPY . ./
 
-# 🚀 FIXED: Point directly to your modern .slnx file for the restore process
-RUN dotnet restore Hindsight.slnx
-
-# Publish the final release binaries using the explicit WebAPI project path
+# 🚀 BULLETPROOF FIX: We bypass the .slnx solution file entirely! 
+# We tell .NET to restore and publish by pointing directly to the WebAPI project file.
+RUN dotnet restore src/Hindsight.WebAPI/Hindsight.WebAPI.csproj
 RUN dotnet publish src/Hindsight.WebAPI/Hindsight.WebAPI.csproj -c Release -o out
 
 # ==========================================
