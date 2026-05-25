@@ -12,24 +12,34 @@ var builder = WebApplication.CreateBuilder(args);
 var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
 builder.WebHost.ConfigureKestrel(options => options.ListenAnyIP(int.Parse(port)));
 
-// 1. Configure the Database Context (Using SQLite for an easy sandbox setup)
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") 
-        ?? "Data Source=hindsight.db"));
+// 🚀 FIXED: Hardened SQLite Connection String using an Absolute Path for the Linux Container Environment
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(connectionString))
+{
+    var dbPath = Path.Combine(AppContext.BaseDirectory, "hindsight.db");
+    connectionString = $"Data Source={dbPath}";
+}
 
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(connectionString));
+
+// Configure CORS to trust both local testing environments and your active Cloudflare production network
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontendApp", policy =>
     {
-        policy.WithOrigins("https://time-fortune.ronitrj1234.workers.dev") // Allows your local React build
-              .AllowAnyHeader()                     // Allows content-type, accept, etc.
-              .AllowAnyMethod();                    // Allows GET, POST, etc.
+        policy.WithOrigins(
+                "http://localhost:8080", 
+                "https://time-fortune.ronitrj1234.workers.dev"
+              ) 
+              .AllowAnyHeader()                     
+              .AllowAnyMethod();                    
     });
 });
 
 // 2. Register Repositories and Domain Services
 builder.Services.AddScoped<IAssetPriceSnapshot, AssetPriceSnapshotRepository>();
-builder.Services.AddScoped<IMetadataLookup , MetadataLookupRepository>();
+builder.Services.AddScoped<IMetadataLookup, MetadataLookupRepository>();
 builder.Services.AddScoped<CalculatorService>();
 builder.Services.AddScoped<MetadataService>();
 
@@ -48,21 +58,36 @@ builder.Services.AddHttpClient<ICurrencyExchange, CurrencyExchange>(client =>
 // 4. Add Web API Controller Routing Frameworks
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(); // Generates your interactive UI web playground
+builder.Services.AddSwaggerGen(); 
 
 var app = builder.Build();
 
 // 5. Configure the HTTP Request Execution Pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Hindsight API v1"));
-}
+// 🚀 FIXED: Enabled Swagger for production temporarily so you can visually verify endpoints on Render!
+app.UseSwagger();
+app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Hindsight API v1"));
 
+// Crucial: Keep CORS right before routing handlers to shield internal errors cleanly
 app.UseCors("AllowFrontendApp");
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
+// 🚀 CRITICAL FIX: Automatically create the SQLite file, generate your tables, and run migrations on boot!
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Console.WriteLine("⏳ Running database migration scripts inside the Docker sandbox...");
+        await context.Database.MigrateAsync();
+        Console.WriteLine("🚀 SQLite Database successfully initialized, tables built, and historical data seeded!");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ CRITICAL DATABASE INITIALIZATION ERROR: {ex.Message}");
+    }
+}
 
 app.Run();
