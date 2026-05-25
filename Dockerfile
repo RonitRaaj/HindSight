@@ -1,7 +1,7 @@
 # ==========================================
 # 1. BUILD & COMPILE STAGE
 # ==========================================
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build-env
 WORKDIR /app
 
 # Copy absolutely everything from your repository into the container workspace
@@ -15,7 +15,7 @@ RUN dotnet publish src/Hindsight.WebAPI/Hindsight.WebAPI.csproj -c Release -o ou
 # ==========================================
 # 2. RUNTIME STAGE
 # ==========================================
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build-env /app/out .
 
