@@ -21,7 +21,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontendApp", policy =>
     {
-        policy.WithOrigins("http://localhost:8080") // Allows your local React build
+        policy.WithOrigins("https://hindsight-tqgc.onrender.com") // Allows your local React build
               .AllowAnyHeader()                     // Allows content-type, accept, etc.
               .AllowAnyMethod();                    // Allows GET, POST, etc.
     });
