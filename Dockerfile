@@ -19,8 +19,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build-env /app/out .
 
-# Ensure SQLite has read/write filesystem access within Render's app sandbox root
-ENV ASPNETCORE_URLS=http://+:10000
-EXPOSE 10000
+# 🚀 FIXED: Allow the app to bind natively to port 8080 (the .NET standard)
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "Hindsight.WebAPI.dll"]

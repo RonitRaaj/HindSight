@@ -8,11 +8,10 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Force Kestrel server to bind perfectly to Render's internal dynamic porting engine
-var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
-builder.WebHost.ConfigureKestrel(options => options.ListenAnyIP(int.Parse(port)));
+// 🚀 REMOVED: Manual Kestrel port binding has been completely deleted.
+// .NET will now naturally listen to Render's default routing variables.
 
-// 🚀 FIXED: Hardened SQLite Connection String using an Absolute Path for the Linux Container Environment
+// 1. Configure the Database Context (Using SQLite for an easy sandbox setup)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrEmpty(connectionString))
 {
@@ -23,7 +22,7 @@ if (string.IsNullOrEmpty(connectionString))
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(connectionString));
 
-// Configure CORS to trust both local testing environments and your active Cloudflare production network
+// Configure CORS to trust your active Cloudflare production network and local testing
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontendApp", policy =>
@@ -63,18 +62,17 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // 5. Configure the HTTP Request Execution Pipeline
-// 🚀 FIXED: Enabled Swagger for production temporarily so you can visually verify endpoints on Render!
 app.UseSwagger();
 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Hindsight API v1"));
 
-// Crucial: Keep CORS right before routing handlers to shield internal errors cleanly
+// Keep CORS right at the beginning of the middleware stack
 app.UseCors("AllowFrontendApp");
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
-// 🚀 CRITICAL FIX: Automatically create the SQLite file, generate your tables, and run migrations on boot!
+// 6. Automatically create the SQLite file, generate tables, and run migrations on boot
 using (var scope = app.Services.CreateScope())
 {
     try
