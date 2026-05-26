@@ -1,4 +1,5 @@
 using Hindsight.Application.Interfaces;
+using Microsoft.Extensions.Configuration;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 
@@ -7,10 +8,14 @@ namespace Hindsight.Infrastructure.Services;
 public class LiveAssetPriceFetcher : IAssetPriceFetcher
 {
     private readonly HttpClient _httpClient;
+    private readonly IConfiguration _configuration;
+    private readonly string _apiKey;
 
-    public LiveAssetPriceFetcher(HttpClient httpClient)
+    public LiveAssetPriceFetcher(HttpClient httpClient , IConfiguration configuration)
     {
         _httpClient = httpClient;
+        _configuration = configuration;
+        _apiKey = _configuration["MARKET_API_KEY"] ?? string.Empty;
     }
 
     public async Task<decimal> GetLivePriceAsync(string assetName, CancellationToken cancellationToken = default)
@@ -24,12 +29,20 @@ public class LiveAssetPriceFetcher : IAssetPriceFetcher
             // =========================================================================
             if (normalizedName == "bitcoin")
             {
-                var response = await _httpClient.GetFromJsonAsync<JsonNode>(
-                    "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",
-                    cancellationToken);
+                var requestUrl = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd";
 
-                var price = response?["bitcoin"]?["usd"]?.GetValue<decimal>();
-                return price ?? throw new InvalidOperationException("Failed to extract live Bitcoin node value.");
+                var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+
+                if (!string.IsNullOrEmpty(_apiKey))
+                {
+                    request.Headers.Add("x-cg-demo-api-key", _apiKey);
+                }
+
+                var response = await _httpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+
+                var data = await response.Content.ReadFromJsonAsync<Dictionary<string, Dictionary<string, decimal>>>();
+                return data["bitcoin"]["usd"];
             }
 
             // =========================================================================
