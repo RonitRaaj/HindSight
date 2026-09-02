@@ -46,4 +46,10 @@ public class HindsightController : ControllerBase
     {
         return Ok(await _metaDataService.GetMetaData());
     }
+
+    [HttpGet("healthcheck")]
+    public IActionResult HealthCheck()
+   {
+       return Ok("OK");
+   }
 }
